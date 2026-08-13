@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>BirdDog PLAY recovery flasher</title>
+<title>BirdDog PLAY recovery flasher (beta)</title>
 <style>
   :root {
     color-scheme: light dark;
@@ -79,6 +79,10 @@
            font-size: .75rem; font-weight: 600; border: 1px solid var(--line); color: var(--dim); }
   .state.on { color: var(--ok); border-color: var(--ok); }
 
+  .beta { font-size: .68rem; font-weight: 700; text-transform: uppercase;
+          letter-spacing: .06em; color: var(--warn); border: 1px solid var(--warn);
+          border-radius: 3px; padding: .05em .35em; vertical-align: .28em; margin-left: .45rem; }
+
   ol.steps { padding-left: 1.2rem; } ol.steps li { margin: .4rem 0; }
   .note { color: var(--dim); font-size: .85rem; }
   footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
@@ -87,7 +91,7 @@
 </head>
 <body>
 <main>
-  <h1>BirdDog PLAY recovery flasher</h1>
+  <h1>BirdDog PLAY recovery flasher <span class="beta">beta</span></h1>
   <p class="sub">Writes a factory <code>.img</code> to a PLAY in Rockchip recovery mode over USB,
      optionally with a <code>.fw</code> update package injected so it installs itself on first
      boot. Everything happens in this browser — no upload, no server, no vendor key.</p>
@@ -96,9 +100,12 @@
     <p><strong>This rewrites the whole device.</strong> Bootloader, kernel, rootfs and partition
        table. It restores <em>factory</em> state, not this unit's own — its serial, hostname and
        everything under <code>/userdata</code> are gone. Dump a unit you care about first.</p>
-    <p class="note">Nothing here has been run against a PLAY yet. The image parsing, the
-       filesystem injection and the partition table are all covered by tests against real vendor
-       files; the USB half is written from the protocol, not from observation.</p>
+    <p class="note"><strong>Why beta:</strong> no PLAY has been flashed with this yet. The image
+       parsing, the filesystem injection and the partition table are covered by tests against
+       real vendor files — e2fsck accepts the patched rootfs, and the partition table is checked
+       by an independent parser. The USB half is written from Rockchip's protocol rather than
+       from observation, so the loader handoff and the first-boot install are the parts still
+       taking your unit's word for it.</p>
   </div>
 
   <div id="unsupported" class="banner err" hidden>

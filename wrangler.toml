@@ -11,6 +11,14 @@
 name = "birddog-play-flasher"
 compatibility_date = "2026-08-13"
 
+# Declaring a route silently flips workers_dev to false, which 404s the
+# *.workers.dev URL from that deploy on. Both are kept live deliberately.
+workers_dev = true
+
+[[routes]]
+pattern = "birddog-play-flasher.stoatworks-labs.com"
+custom_domain = true
+
 [assets]
 directory = "./public"
 
