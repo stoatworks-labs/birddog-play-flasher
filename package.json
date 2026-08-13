@@ -1,0 +1,16 @@
+{
+  "name": "birddog-play-flasher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Flashes a BirdDog PLAY in Rockchip recovery mode from the browser, optionally injecting a .fw update package into the image",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "dev": "wrangler dev --port 8793",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.116.0"
+  }
+}

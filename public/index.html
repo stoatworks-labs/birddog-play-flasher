@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BirdDog PLAY recovery flasher</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfaf8;      --panel: #fff;     --ink: #1c1b1a;   --dim: #6b6864;
+    --line: #e3e0da;    --accent: #b4541f; --ok: #2c6e49;    --warn: #8a6100;
+    --err: #a32b1c;     --code: #f3f1ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #171614;    --panel: #1f1e1c;  --ink: #e9e6e0;   --dim: #9c968d;
+      --line: #322f2b;  --accent: #e08a55; --ok: #6fbf8f;    --warn: #d9ad4f;
+      --err: #e8776a;   --code: #171614;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2.5rem 1.25rem 5rem; background: var(--bg); color: var(--ink);
+    font: 15px/1.6 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .09em;
+       color: var(--dim); margin: 2rem 0 .75rem; font-weight: 600; }
+  p { margin: .5rem 0; }
+  .sub { color: var(--dim); margin-bottom: 1.5rem; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85em; }
+  code { background: var(--code); padding: .1em .35em; border-radius: 3px; }
+  a { color: var(--accent); }
+
+  .panel { background: var(--panel); border: 1px solid var(--line);
+           border-radius: 10px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .panel h2:first-child { margin-top: 0; }
+  .banner { border-left: 3px solid var(--warn); background: var(--panel);
+            border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: 1.5rem; }
+  .banner strong { color: var(--warn); }
+  .banner.err { border-left-color: var(--err); }
+  .banner.err strong { color: var(--err); }
+
+  label.field { display: block; font-weight: 600; margin-bottom: .3rem; }
+  .hint { color: var(--dim); font-size: .82rem; margin: .35rem 0 1.1rem; }
+
+  .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: 1.25rem; }
+  button {
+    font: inherit; font-weight: 600; padding: .55rem 1.1rem; border-radius: 6px;
+    border: 1px solid transparent; background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  button.danger { background: var(--err); }
+  input[type=file] { font-size: .82rem; color: var(--dim); max-width: 100%; }
+
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: .5rem; }
+  th { text-align: left; color: var(--dim); font-weight: 600; font-size: .75rem;
+       text-transform: uppercase; letter-spacing: .06em; padding: .3rem .5rem .3rem 0; }
+  td { padding: .25rem .5rem .25rem 0; border-top: 1px solid var(--line);
+       font-family: ui-monospace, Menlo, monospace; }
+  td.num { text-align: right; }
+  tr.inject td { color: var(--ok); }
+
+  .bar { height: 7px; background: var(--code); border-radius: 4px; overflow: hidden; margin-top: .75rem; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+
+  #log { background: var(--code); border: 1px solid var(--line); border-radius: 8px;
+         padding: .8rem; margin-top: 1.25rem; max-height: 17rem; overflow: auto;
+         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+         font-size: .78rem; line-height: 1.7; }
+  #log:empty { display: none; }
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .line.ok { color: var(--ok); } .line.warn { color: var(--warn); } .line.err { color: var(--err); }
+
+  .state { display: inline-block; padding: .1rem .5rem; border-radius: 100px;
+           font-size: .75rem; font-weight: 600; border: 1px solid var(--line); color: var(--dim); }
+  .state.on { color: var(--ok); border-color: var(--ok); }
+
+  ol.steps { padding-left: 1.2rem; } ol.steps li { margin: .4rem 0; }
+  .note { color: var(--dim); font-size: .85rem; }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
+           color: var(--dim); font-size: .82rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>BirdDog PLAY recovery flasher</h1>
+  <p class="sub">Writes a factory <code>.img</code> to a PLAY in Rockchip recovery mode over USB,
+     optionally with a <code>.fw</code> update package injected so it installs itself on first
+     boot. Everything happens in this browser — no upload, no server, no vendor key.</p>
+
+  <div class="banner">
+    <p><strong>This rewrites the whole device.</strong> Bootloader, kernel, rootfs and partition
+       table. It restores <em>factory</em> state, not this unit's own — its serial, hostname and
+       everything under <code>/userdata</code> are gone. Dump a unit you care about first.</p>
+    <p class="note">Nothing here has been run against a PLAY yet. The image parsing, the
+       filesystem injection and the partition table are all covered by tests against real vendor
+       files; the USB half is written from the protocol, not from observation.</p>
+  </div>
+
+  <div id="unsupported" class="banner err" hidden>
+    <p><strong>This browser has no WebUSB.</strong> Chrome, Edge or another Chromium browser is
+       required — Firefox and Safari do not implement it. The page also has to be served over
+       HTTPS or from localhost.</p>
+  </div>
+
+  <div class="panel">
+    <h2>1 — Files</h2>
+    <label class="field" for="img">Factory image (<code>.img</code>)</label>
+    <input type="file" id="img" accept=".img,application/octet-stream">
+    <p class="hint">The Rockchip recovery image for the PLAY, e.g. <code>PLAY_1.0.30.img</code>.
+       Read directly off disk; a 2.4 GB file is never held in memory.</p>
+
+    <label class="field" for="pkg">Update package to inject (<code>.fw</code>, optional)</label>
+    <input type="file" id="pkg" accept=".fw,application/octet-stream">
+    <p class="hint">Stock or custom. It is parked in the unused tail of the rootfs partition, and
+       a one-shot service installs it on first boot through the device's own updater. Leave empty
+       to flash the image unchanged.</p>
+    <div id="imgInfo"></div>
+  </div>
+
+  <div class="panel">
+    <h2>2 — Device</h2>
+    <p>Put the PLAY into Rockchip recovery mode, connect it by USB, then pair it with the page.
+       <span id="devState" class="state">not connected</span></p>
+    <div class="row">
+      <button id="connect">Connect device</button>
+      <button id="forget" class="ghost" hidden>Disconnect</button>
+    </div>
+    <p class="hint" id="devHint">Chrome will ask which device to allow. A PLAY in recovery mode
+       appears as a Rockchip device (vendor <code>2207</code>).</p>
+  </div>
+
+  <div class="panel">
+    <h2>3 — Write</h2>
+    <div id="planInfo"><p class="note">Choose an image and connect a device.</p></div>
+    <div class="row">
+      <button id="flash" class="danger" disabled>Flash device</button>
+      <button id="cancel" class="ghost" hidden>Cancel</button>
+      <label class="note"><input type="checkbox" id="verify"> verify by reading back</label>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+    <div id="log"></div>
+  </div>
+
+  <details class="panel">
+    <summary><strong>Getting a PLAY into recovery mode, and the Windows driver problem</strong></summary>
+    <ol class="steps">
+      <li>Power the unit off.</li>
+      <li>Hold the recovery button while applying power, and keep holding for a few seconds.</li>
+      <li>Connect the USB port to this computer. The unit should enumerate as vendor
+          <code>2207</code>; the page reports whether it came up in <em>maskrom</em> or
+          <em>loader</em> mode, and handles either.</li>
+    </ol>
+    <p class="note"><strong>Windows:</strong> WebUSB can only talk to a device bound to WinUSB.
+       Rockchip's own driver claims the device and will block this page — use
+       <a href="https://zadig.akeo.ie/">Zadig</a> to rebind it to WinUSB first. macOS needs
+       nothing. Linux needs a udev rule granting access to <code>2207:*</code>.</p>
+  </details>
+
+  <details class="panel">
+    <summary><strong>Pushing a <code>.fw</code> over the network instead</strong></summary>
+    <p>A booted PLAY takes update packages over the network, and this page cannot do it — an
+       HTTPS page is not allowed to reach a plain-HTTP device on your LAN, and a browser tab
+       cannot serve the file for the device to fetch. It is two commands by hand:</p>
+    <ol class="steps">
+      <li>Serve the package from the directory holding it:
+          <code>python3 -m http.server 8000</code></li>
+      <li>Tell the device to fetch and install it — the API on port 8080 needs no login:
+          <code>curl "http://&lt;play-ip&gt;:8080/update?ip=&lt;your-ip&gt;&amp;port=8000&amp;firmware=package.fw"</code></li>
+    </ol>
+    <p class="note">Progress streams from <code>ws://&lt;play-ip&gt;:6789</code> while it runs.</p>
+  </details>
+
+  <footer>
+    <p>Built with AI assistance. Not affiliated with, endorsed by, or supported by BirdDog.
+       BirdDog is a trademark of its owner; this tool ships none of their software.</p>
+    <p><a href="https://github.com/stoatworks-labs/birddog-play-flasher">Source</a></p>
+  </footer>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

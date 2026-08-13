@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.DS_Store
+
+# Vendor firmware must never land here — test/policy.test.mjs enforces it, this
+# just stops an accidental drag-and-drop from getting as far as a commit.
+*.img
+*.fw
+*.bin

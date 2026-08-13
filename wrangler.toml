@@ -1,0 +1,18 @@
+# Cloudflare deployment for the BirdDog PLAY recovery flasher.
+#
+# Assets only — there is no Worker, because there is nothing for a server to do.
+# The image is read off the user's disk, parsed in the browser and pushed
+# straight to USB; nothing is uploaded and there is no secret to bind.
+#
+# Deliberately NOT connected to Workers Builds. Deploys are local
+# (`cf-run npx wrangler deploy`), so pushing a branch cannot publish to
+# production — a trap that has bitten other repos in this fleet.
+
+name = "birddog-play-flasher"
+compatibility_date = "2026-08-13"
+
+[assets]
+directory = "./public"
+
+[observability]
+enabled = true

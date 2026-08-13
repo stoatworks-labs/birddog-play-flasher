@@ -1,0 +1,56 @@
+name: ci
+
+# The page has no build step, so CI's job is to prove that what the tool writes
+# is accepted by tools that had no hand in writing it: e2fsck and debugfs for
+# the filesystem, sgdisk and an independent Python parser for the partition
+# table. No vendor firmware is involved — the ext2 image is built here.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  birddog-play-flasher:
+    name: birddog-play-flasher
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+
+      - name: Install the independent judges
+        run: sudo apt-get update && sudo apt-get install -y e2fsprogs gdisk
+
+      - name: Test
+        run: npm test
+
+      # The suite skips rather than fails when a tool is missing, which would
+      # let a silent regression through if the runner ever lost one of them.
+      - name: Every CI-safe test must actually have run
+        run: |
+          node --test "test/*.test.mjs" 2>&1 | tee /tmp/out
+          if grep -E '# (e2fsprogs not installed|sgdisk not installed)' /tmp/out; then
+            echo "a tool CI is supposed to provide was missing"; exit 1
+          fi
+
+      - name: Modules must stay free of DOM and network use
+        run: |
+          for f in public/crc.js public/rkboot.js public/rkfw.js public/ext2.js \
+                   public/gpt.js public/inject.js public/plan.js; do
+            if grep -nE '\b(document|window|fetch|XMLHttpRequest)\b' "$f"; then
+              echo "$f reaches for the browser — the tests drive these in Node"; exit 1
+            fi
+            echo "ok  $f"
+          done
+
+      - name: The injected payload must parse as shell
+        run: |
+          node -e '
+            import("./public/inject.js").then(m => {
+              process.stdout.write(m.injectScript({ sector: 4687872, bytes: 45602980 }));
+            });
+          ' > /tmp/bd-inject.sh
+          sh -n /tmp/bd-inject.sh && echo "ok  injected script parses"
+          grep -q "reboot" /tmp/bd-inject.sh || { echo "installer must reboot"; exit 1; }

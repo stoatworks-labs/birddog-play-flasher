@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flasher",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8793", "--directory", "public"],
+      "port": 8793
+    }
+  ]
+}
