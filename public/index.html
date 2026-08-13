@@ -148,13 +148,19 @@
 
   <details class="panel">
     <summary><strong>Getting a PLAY into recovery mode, and the Windows driver problem</strong></summary>
+    <p>The recovery button is not on the outside of the case — it sits <strong>inside the 3.5 mm
+       headphone socket</strong>. Straighten a paperclip or use a SIM-eject tool, push it gently
+       all the way into the socket, and you will feel the button click.</p>
     <ol class="steps">
       <li>Power the unit off.</li>
-      <li>Hold the recovery button while applying power, and keep holding for a few seconds.</li>
-      <li>Connect the USB port to this computer. The unit should enumerate as vendor
-          <code>2207</code>; the page reports whether it came up in <em>maskrom</em> or
+      <li>Push the pin into the headphone socket and hold the button down.</li>
+      <li>Still holding it, apply power, and keep holding for a few seconds after.</li>
+      <li>Connect the USB port to this computer, then release. The unit should enumerate as
+          vendor <code>2207</code>; the page reports whether it came up in <em>maskrom</em> or
           <em>loader</em> mode, and handles either.</li>
     </ol>
+    <p class="note">If the unit boots normally instead, the button was not held down far enough
+       or long enough — the socket is deep and the button is right at the bottom.</p>
     <p class="note"><strong>Windows:</strong> WebUSB can only talk to a device bound to WinUSB.
        Rockchip's own driver claims the device and will block this page — use
        <a href="https://zadig.akeo.ie/">Zadig</a> to rebind it to WinUSB first. macOS needs
@@ -162,17 +168,17 @@
   </details>
 
   <details class="panel">
-    <summary><strong>Pushing a <code>.fw</code> over the network instead</strong></summary>
-    <p>A booted PLAY takes update packages over the network, and this page cannot do it — an
-       HTTPS page is not allowed to reach a plain-HTTP device on your LAN, and a browser tab
-       cannot serve the file for the device to fetch. It is two commands by hand:</p>
+    <summary><strong>Installing a <code>.fw</code> on a unit that still boots</strong></summary>
+    <p>You do not need any of this to install an update package on a working PLAY — the device's
+       own web interface does it:</p>
     <ol class="steps">
-      <li>Serve the package from the directory holding it:
-          <code>python3 -m http.server 8000</code></li>
-      <li>Tell the device to fetch and install it — the API on port 8080 needs no login:
-          <code>curl "http://&lt;play-ip&gt;:8080/update?ip=&lt;your-ip&gt;&amp;port=8000&amp;firmware=package.fw"</code></li>
+      <li>Browse to the PLAY's IP address and log in.</li>
+      <li>Go to the <strong>System</strong> tab.</li>
+      <li>Choose the <code>.fw</code> file and upload it. The device installs it and reboots.</li>
     </ol>
-    <p class="note">Progress streams from <code>ws://&lt;play-ip&gt;:6789</code> while it runs.</p>
+    <p class="note">This page is for the case where that is not an option: a unit that will not
+       boot, will not take a web-UI update, or needs the whole device put back to a known state.
+       Injecting the <code>.fw</code> here just saves a second trip once it is back up.</p>
   </details>
 
   <footer>

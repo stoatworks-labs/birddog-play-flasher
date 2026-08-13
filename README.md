@@ -41,31 +41,32 @@ cannot reinstall itself on every boot.
 
 ## Getting a PLAY into recovery mode
 
+The recovery button is not on the outside of the case — it sits **inside the 3.5 mm headphone
+socket**. Straighten a paperclip or use a SIM-eject tool, push it gently all the way in, and you
+will feel the button click.
+
 1. Power the unit off.
-2. Hold the recovery button while applying power; keep holding for a few seconds.
-3. Connect USB. The unit enumerates as vendor `2207`, in either *maskrom* or *loader* mode —
-   the page reports which and handles both.
+2. Push the pin into the headphone socket and hold the button down.
+3. Still holding it, apply power, and keep holding for a few seconds after.
+4. Connect USB, then release. The unit enumerates as vendor `2207`, in either *maskrom* or
+   *loader* mode — the page reports which and handles both.
+
+If it boots normally instead, the button was not held down far enough or long enough; the socket
+is deep and the button is right at the bottom.
 
 **Windows** needs [Zadig](https://zadig.akeo.ie/) to rebind the device to WinUSB, because
 Rockchip's own driver claims it and WebUSB cannot then reach it. macOS needs nothing. Linux
 needs a udev rule for `2207:*`.
 
-## Pushing a `.fw` over the network instead
+## Installing a `.fw` on a unit that still boots
 
-This page deliberately does **not** do the network update, and cannot: an HTTPS page may not
-reach a plain-HTTP device on your LAN, and a browser tab cannot serve a file for the device to
-fetch. By hand it is two commands, and the API on port 8080 needs no login:
+You do not need any of this to update a working PLAY — the device's own web interface does it.
+Browse to the unit's IP address, log in, go to the **System** tab, and upload the `.fw` there.
+The device installs it and reboots.
 
-```bash
-python3 -m http.server 8000
-```
-
-```bash
-curl "http://<play-ip>:8080/update?ip=<your-ip>&port=8000&firmware=package.fw"
-```
-
-The device fetches the file, writes `/tmp/birddog-update-package`, takes the update lock and
-starts `BirdDogUpdateRunner`. Progress streams from `ws://<play-ip>:6789` while it runs.
+This tool is for the case where that is not an option: a unit that will not boot, will not take
+a web-UI update, or needs the whole device put back to a known state. Injecting the `.fw` here
+just saves a second trip once it is back up.
 
 ## Tests
 
