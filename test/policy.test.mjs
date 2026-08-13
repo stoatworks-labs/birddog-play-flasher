@@ -8,7 +8,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,12 +34,25 @@ test('no vendor firmware is committed', () => {
 });
 
 test('nothing large is committed', () => {
-  // A loader blob is ~190 KB and a rootfs is gigabytes. Nothing this repo needs
-  // comes close, so a big file is a mistake worth catching early.
+  // A loader blob is ~190 KB and a rootfs is gigabytes. No code or doc this repo
+  // needs comes close, so a big file is a mistake worth catching early.
+  //
+  // README screenshots are the one legitimate exception, and they get their own
+  // ceiling rather than a free pass — the point of the rule is that nothing
+  // firmware-shaped slips in wearing a different extension.
+  const SHOTS = /^docs\/screenshots\/[^/]+\.png$/;
   const big = walk(ROOT)
     .map((p) => [p.slice(ROOT.length), statSync(p).size])
-    .filter(([, size]) => size > 256 * 1024);
+    .filter(([p, size]) => size > (SHOTS.test(p) ? 1024 * 1024 : 256 * 1024));
   assert.deepEqual(big, [], `unexpectedly large files: ${big.map(([p, s]) => `${p} (${s})`).join(', ')}`);
+});
+
+test('every screenshot the README references exists', () => {
+  const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
+  const missing = [...readme.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
+    .map((m) => m[1])
+    .filter((rel) => !existsSync(join(ROOT, rel)));
+  assert.deepEqual(missing, [], `README points at images that are not committed: ${missing.join(', ')}`);
 });
 
 test('the page carries the AI-assistance disclaimer', () => {

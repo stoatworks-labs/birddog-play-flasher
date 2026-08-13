@@ -12,6 +12,13 @@ this repo can be public — see [AGENTS.md](AGENTS.md) §5.
 > and the partition table are covered by tests against genuine vendor files. The USB half is
 > written from rkdeveloptool's protocol, not from observation.
 
+![The page with a genuine PLAY_1.0.30.img chosen, showing the parsed partition table](docs/screenshots/flasher.png)
+
+Both files above are real: a 2.3 GB factory `.img` and a 35 MB `.fw`. The image is read off
+disk in slices and never held in memory, so choosing one costs nothing.
+
+![The parsed GPT, the device pairing step and the write step, with the image identified as RK3328 H223](docs/screenshots/injection-plan.png)
+
 ## What it does
 
 | | |
