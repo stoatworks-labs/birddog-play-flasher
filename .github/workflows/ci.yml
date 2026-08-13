@@ -30,7 +30,7 @@ jobs:
       # let a silent regression through if the runner ever lost one of them.
       - name: Every CI-safe test must actually have run
         run: |
-          node --test "test/*.test.mjs" 2>&1 | tee /tmp/out
+          node --test test/*.test.mjs 2>&1 | tee /tmp/out
           if grep -E '# (e2fsprogs not installed|sgdisk not installed)' /tmp/out; then
             echo "a tool CI is supposed to provide was missing"; exit 1
           fi
