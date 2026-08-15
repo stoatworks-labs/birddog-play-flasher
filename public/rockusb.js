@@ -139,8 +139,26 @@ export class RockUsb {
    * loader proper), honouring each entry's own delay. The device re-enumerates
    * afterwards, so this object is dead once it returns — the caller must ask
    * for the device again in loader mode.
+   *
+   * PROVEN ON HARDWARE 2026-08-15 by getting rkdeveloptool to do it, then
+   * matching what it does. Two things this now gets right, both learned the
+   * expensive way:
+   *
+   *  - **Do not open, configure or claim the interface first.** These are
+   *    vendor CONTROL transfers to the device; they need no interface. An
+   *    earlier version called selectConfiguration/claimInterface before
+   *    pushing, and ENTRY471 was then accepted while ENTRY472 timed out every
+   *    time. rkdeveloptool touches none of that and works first try.
+   *  - **Nothing here is RC4'd.** rkdeveloptool's GetEntryData is a plain
+   *    memcpy; the header flag it reads is "RC4 *disable*". Entries go verbatim.
+   *
+   * And the failure mode worth knowing: once a 471 has been followed by a
+   * failed 472, the maskrom refuses a fresh 471 too, and only a power cycle
+   * clears it. A healthy device then looks bricked.
    */
   async downloadBoot(loaderBytes, onProgress = () => {}) {
+    // Control transfers only — deliberately no open()/claim() here.
+    if (!this.device.opened) await this.device.open();
     const boot = parseRkBoot(loaderBytes);
     const entries = [
       ...boot.entries.filter((e) => e.type === ENTRY471),
@@ -152,61 +170,9 @@ export class RockUsb {
       await this.vendorRequest(entry.type === ENTRY471 ? 0x0471 : 0x0472, entry.data);
       await sleep(Math.max(entry.delayMs || 0, 200));
 
-      // OBSERVED ON HARDWARE, 2026-08-15, cause NOT established:
-      // against a real PLAY in maskrom, ENTRY471 (DDR init) is accepted and
-      // then ENTRY472 times out. Re-opening the device in between is a
-      // defensive guess at why — it is what you would do if the maskrom
-      // restarted its USB stack — and it did NOT fix it. Do not read this
-      // block as a diagnosis.
-      //
-      // What IS established: after a 471 that is followed by a failed 472, the
-      // maskrom will not accept a fresh 471 either. Only a power cycle clears
-      // that, which makes the device look far more broken than it is.
-      //
-      // Also ruled out: RC4. This loader's RKBOOT header sets the flag that
-      // rkdeveloptool reads as "RC4 disable", so sending the entries verbatim
-      // is correct.
-      //
-      // Until someone traces a working Windows AndroidTool handoff, treat the
-      // maskrom path in this tool as UNPROVEN.
-      if (entry.type === ENTRY471) {
-        onProgress('  DDR initialised — waiting for the device to re-enumerate');
-        if (!(await this.reacquire())) {
-          throw new Error(
-            'the device did not come back after DDR init. Power-cycle it, hold the '
-            + 'reset button while reconnecting, and try again — nothing has been '
-            + 'written to flash.',
-          );
-        }
-        onProgress(`  back as a ${this.mode} device`);
-      }
     }
     await sleep(1000);
     return boot;
-  }
-
-  /**
-   * Re-open this device after it re-enumerates, keeping the same RockUsb.
-   * Returns false if it never comes back.
-   */
-  async reacquire(timeoutMs = 15000) {
-    try { await this.device.close(); } catch { /* it has already gone */ }
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const devices = await navigator.usb.getDevices();
-      const match = devices.find((d) => d.vendorId === RK_VENDOR_ID);
-      if (match) {
-        // `mode` is a getter over this.device, so swapping the device is the
-        // whole update — assigning to this.mode would throw (getter, no setter).
-        this.device = match;
-        try {
-          await this.open();
-          return true;
-        } catch { /* enumerated but not ready yet */ }
-      }
-      await sleep(300);
-    }
-    return false;
   }
 
   // ---- loader (CBW/CSW) ---------------------------------------------------

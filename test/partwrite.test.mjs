@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { buildGpt, parseGpt } from '../public/gpt.js';
 import { buildPartitionPlan, guessPartition, PROTECTED } from '../public/partwrite.js';
+import { verifyPlan, findReadCeiling } from '../public/plan.js';
 
 // The PLAY's factory layout, from parameter.txt. Sectors of 512 bytes.
 const PLAY = [
@@ -108,4 +109,59 @@ test('polecat filenames pre-select the right partitions', () => {
   // "recovery" must not be matched by a shorter name that is a substring of it.
   assert.equal(guessPartition('polecat-recovery.img', parts), 'recovery');
   assert.equal(guessPartition('something-else.bin', parts), null);
+});
+
+// --- read ceiling ------------------------------------------------------------
+//
+// A PLAY returns 0xCC fill instead of data at and above sector 0x10000, through
+// every loader tried. Verification that does not know this reports thousands of
+// mismatches for a write that was probably fine.
+
+test('a device that returns fill above a sector reports that sector as its ceiling', async () => {
+  const CEIL = 0x10000;
+  const fake = {
+    async readLba(sector) {
+      return new Uint8Array(512).fill(sector >= CEIL ? 0xcc : 0x42);
+    },
+  };
+  // Ascending probes: uboot and misc read fine, recovery is the first fill.
+  assert.equal(await findReadCeiling(fake, [0x4000, 0x8000, 0x2a000, 0x5a000]), 0x2a000);
+});
+
+test('a device that reads properly everywhere has no ceiling', async () => {
+  const fake = { async readLba() { return new Uint8Array(512).fill(0x42); } };
+  assert.equal(await findReadCeiling(fake, [0x4000, 0x2a000]), null);
+});
+
+test('a partition that cannot be read is reported as unverified, not as a mismatch', async () => {
+  const CEIL = 0x10000;
+  const payload = new Uint8Array(13 << 20).fill(0x11);   // 13 MiB: crosses 0x10000
+  const parts = deviceParts();
+  const plan = buildPartitionPlan(parts, [{ partition: 'boot', blob: new Blob([payload]) }]);
+  const fake = {
+    async readLba(sector, count) {
+      // Correct data below the ceiling, fill above — exactly the PLAY's behaviour.
+      return new Uint8Array(count * 512).fill(sector >= CEIL ? 0xcc : 0x11);
+    },
+  };
+  const { mismatches, skipped } = await verifyPlan(fake, plan, { readCeiling: CEIL });
+  assert.deepEqual(mismatches, [], 'nothing above the ceiling should be called a mismatch');
+  assert.equal(skipped.length, 1);
+  assert.equal(skipped[0].op, 'boot');
+  assert.equal(skipped[0].fromSector, CEIL);
+});
+
+test('without a ceiling, the same device produces a wall of false mismatches', async () => {
+  // The old behaviour, kept as a test so the regression is visible if the
+  // ceiling handling is ever removed.
+  const CEIL = 0x10000;
+  const payload = new Uint8Array(13 << 20).fill(0x11);   // 13 MiB: crosses 0x10000
+  const plan = buildPartitionPlan(deviceParts(), [{ partition: 'boot', blob: new Blob([payload]) }]);
+  const fake = {
+    async readLba(sector, count) {
+      return new Uint8Array(count * 512).fill(sector >= CEIL ? 0xcc : 0x11);
+    },
+  };
+  const { mismatches } = await verifyPlan(fake, plan, { readCeiling: null });
+  assert.ok(mismatches.length > 0, 'this is what the PLAY produced: mismatches for good data');
 });

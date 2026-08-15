@@ -100,6 +100,51 @@ function applyPatches(chunk, chunkStart, patches) {
 }
 
 /**
+ * How far up the device can actually be read back.
+ *
+ * MEASURED ON A PLAY, 2026-08-15: reads at or above absolute sector 0x10000
+ * return solid 0xCC — a fill pattern, not data — through both u-boot's rockusb
+ * and Rockchip's own usbplug loader. This is not speculation about our own
+ * writes: `recovery` and `oem` are FACTORY partitions that were never written
+ * by this tool, they certainly contain data, and they read as 0xCC too, while
+ * `uboot` below the boundary reads its real content.
+ *
+ * Verification that ignores this is worse than no verification. It reported
+ * 57,702 mismatches on a write that was very likely fine, and read as "your
+ * flash failed" when it meant "this device cannot be read back that far".
+ *
+ * So: probe it, and say so.
+ */
+const FILL_BYTE = 0xcc;
+
+function isFill(bytes) {
+  if (!bytes || !bytes.length) return false;
+  for (let i = 0; i < bytes.length; i++) if (bytes[i] !== FILL_BYTE) return false;
+  return true;
+}
+
+/**
+ * Find the sector above which read-back stops returning real data, by reading
+ * regions the caller knows are populated. Returns null when reads are good
+ * everywhere probed.
+ *
+ * `known` is a list of absolute sectors that must contain something — factory
+ * partitions are ideal, because their content is not ours to have got wrong.
+ */
+export async function findReadCeiling(rk, known) {
+  for (const sector of known) {
+    let data;
+    try {
+      data = await rk.readLba(sector, 1);
+    } catch {
+      return sector;      // cannot even read it: treat as the ceiling
+    }
+    if (isFill(data)) return sector;
+  }
+  return null;
+}
+
+/**
  * Execute a plan. onProgress({op, sectorsDone, totalDone, totalSectors}).
  */
 export async function runPlan(rk, plan, { onProgress = () => {}, signal } = {}) {
@@ -145,8 +190,9 @@ export async function runPlan(rk, plan, { onProgress = () => {}, signal } = {}) 
  * Read back and compare. Optional, and slow — but this is a recovery tool, and
  * "it flashed fine" from a tool that never looked is worth very little.
  */
-export async function verifyPlan(rk, plan, { onProgress = () => {}, sampleOnly = false } = {}) {
+export async function verifyPlan(rk, plan, { onProgress = () => {}, sampleOnly = false, readCeiling = null } = {}) {
   const mismatches = [];
+  const skipped = [];
   const chunkBytes = SECTORS_PER_TRANSFER * SECTOR_SIZE;
   let checked = 0;
 
@@ -162,7 +208,17 @@ export async function verifyPlan(rk, plan, { onProgress = () => {}, sampleOnly =
       applyPatches(expect, off, op.patches);
 
       const sectors = expect.length / SECTOR_SIZE;
-      const got = await rk.readLba(op.startSector + off / SECTOR_SIZE, sectors);
+      const at = op.startSector + off / SECTOR_SIZE;
+
+      // Above the ceiling the device returns fill, so a comparison here would
+      // manufacture a mismatch for data that may be perfectly written. Record
+      // what could not be checked instead of pretending it failed.
+      if (readCeiling !== null && at >= readCeiling) {
+        skipped.push({ op: op.name, fromSector: at });
+        break;
+      }
+
+      const got = await rk.readLba(at, sectors);
       for (let i = 0; i < expect.length; i++) {
         if (got[i] !== expect[i]) {
           mismatches.push({ op: op.name, byte: off + i });
@@ -173,5 +229,5 @@ export async function verifyPlan(rk, plan, { onProgress = () => {}, sampleOnly =
       onProgress({ op, checked });
     }
   }
-  return mismatches;
+  return { mismatches, skipped };
 }

@@ -3,7 +3,7 @@
 
 import { parseRkfw, readLoader, findPartition, partitionBlob, parseParameter } from './rkfw.js';
 import { RockUsb, waitForMode, usbMode, MASKROM, LOADER, RESET, SECTOR_SIZE } from './rockusb.js';
-import { buildPlan, runPlan, verifyPlan } from './plan.js';
+import { buildPlan, runPlan, verifyPlan, findReadCeiling } from './plan.js';
 import { readDeviceGpt, buildPartitionPlan, guessPartition } from './partwrite.js';
 
 const $ = (id) => document.getElementById(id);
@@ -278,12 +278,17 @@ $('flash').addEventListener('click', async () => {
     // 5. optional read-back
     if ($('verify').checked) {
       log('verifying…');
-      const bad = await verifyPlan(rk, plan, {});
-      if (bad.length) {
-        for (const m of bad.slice(0, 10)) log(`  mismatch in ${m.op} at byte ${m.byte}`, 'err');
-        throw new Error(`${bad.length} region(s) did not read back correctly`);
+      const ceiling = await probeReadCeiling();
+      const { mismatches, skipped } = await verifyPlan(rk, plan, { readCeiling: ceiling });
+      if (mismatches.length) {
+        for (const m of mismatches.slice(0, 10)) log(`  mismatch in ${m.op} at byte ${m.byte}`, 'err');
+        throw new Error(`${mismatches.length} region(s) did not read back correctly`);
       }
-      log('read-back matches', 'ok');
+      for (const s2 of skipped) {
+        log(`  ${s2.op}: not verified from sector ${s2.startSector ?? s2.fromSector} — above this device's read ceiling`, 'warn');
+      }
+      log(skipped.length ? 'read-back matches as far as this device can be read'
+                         : 'read-back matches', 'ok');
     }
 
     await rk.resetDevice(RESET.RESET_MSC);
@@ -303,6 +308,29 @@ $('flash').addEventListener('click', async () => {
   }
 });
 
+
+/**
+ * Ask the device how far it can be read back, using partitions whose content is
+ * not ours — a factory partition that reads as fill is the device's limitation,
+ * not our write's failure. Returns null when everything probed reads properly.
+ */
+async function probeReadCeiling() {
+  if (!deviceParts) return null;
+  // Ascending, so the first fill we hit is the lowest known bad point.
+  const probes = deviceParts
+    .filter((p) => ['uboot', 'trust', 'misc', 'recovery', 'oem'].includes(p.name))
+    .sort((a, b) => a.firstLba - b.firstLba)
+    .map((p) => p.firstLba);
+  if (!probes.length) return null;
+  const ceiling = await findReadCeiling(rk, probes);
+  if (ceiling !== null) {
+    log(`this device returns fill rather than data at and above sector `
+      + `0x${ceiling.toString(16)} — verification cannot see past it`, 'warn');
+    log('  (a factory partition that was never written reads as fill there, so this '
+      + 'is the device, not the write)', 'warn');
+  }
+  return ceiling;
+}
 
 // ---- partition writing ------------------------------------------------------
 //
@@ -362,12 +390,17 @@ async function writePartitions() {
 
     if ($('verify').checked) {
       log('verifying…');
-      const bad = await verifyPlan(rk, plan2, {});
-      if (bad.length) {
-        for (const m of bad.slice(0, 10)) log(`  mismatch in ${m.op} at byte ${m.byte}`, 'err');
-        throw new Error(`${bad.length} region(s) did not read back correctly`);
+      const ceiling = await probeReadCeiling();
+      const { mismatches, skipped } = await verifyPlan(rk, plan2, { readCeiling: ceiling });
+      if (mismatches.length) {
+        for (const m of mismatches.slice(0, 10)) log(`  mismatch in ${m.op} at byte ${m.byte}`, 'err');
+        throw new Error(`${mismatches.length} region(s) did not read back correctly`);
       }
-      log('read-back matches', 'ok');
+      for (const s2 of skipped) {
+        log(`  ${s2.op}: not verified from sector 0x${s2.fromSector.toString(16)} — above this device's read ceiling`, 'warn');
+      }
+      log(skipped.length ? 'read-back matches as far as this device can be read'
+                         : 'read-back matches', 'ok');
     }
 
     await rk.resetDevice(RESET.RESET_MSC);
