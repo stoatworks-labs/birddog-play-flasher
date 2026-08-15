@@ -152,16 +152,23 @@ export class RockUsb {
       await this.vendorRequest(entry.type === ENTRY471 ? 0x0471 : 0x0472, entry.data);
       await sleep(Math.max(entry.delayMs || 0, 200));
 
-      // MEASURED ON HARDWARE, 2026-08-15: the maskrom restarts its USB stack
-      // once DDR is initialised, so the handle that carried ENTRY471 is dead
-      // before ENTRY472 is due. Pushing 472 through it times out, and the whole
-      // loader download then fails in a way that reads as a protocol error
-      // rather than as the device having simply gone away and come back.
+      // OBSERVED ON HARDWARE, 2026-08-15, cause NOT established:
+      // against a real PLAY in maskrom, ENTRY471 (DDR init) is accepted and
+      // then ENTRY472 times out. Re-opening the device in between is a
+      // defensive guess at why — it is what you would do if the maskrom
+      // restarted its USB stack — and it did NOT fix it. Do not read this
+      // block as a diagnosis.
       //
-      // Worse, it leaves the maskrom in a state where it will not accept a
-      // fresh ENTRY471 either — so the retry also fails, and only a power cycle
-      // clears it. That is what made this look like an unrecoverable device
-      // rather than a missing re-open.
+      // What IS established: after a 471 that is followed by a failed 472, the
+      // maskrom will not accept a fresh 471 either. Only a power cycle clears
+      // that, which makes the device look far more broken than it is.
+      //
+      // Also ruled out: RC4. This loader's RKBOOT header sets the flag that
+      // rkdeveloptool reads as "RC4 disable", so sending the entries verbatim
+      // is correct.
+      //
+      // Until someone traces a working Windows AndroidTool handoff, treat the
+      // maskrom path in this tool as UNPROVEN.
       if (entry.type === ENTRY471) {
         onProgress('  DDR initialised — waiting for the device to re-enumerate');
         if (!(await this.reacquire())) {
