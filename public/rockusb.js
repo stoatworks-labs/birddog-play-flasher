@@ -141,7 +141,7 @@ export class RockUsb {
    * for the device again in loader mode.
    *
    * PROVEN ON HARDWARE 2026-08-15 by getting rkdeveloptool to do it, then
-   * matching what it does. Two things this now gets right, both learned the
+   * matching what it does. Three things this now gets right, all learned the
    * expensive way:
    *
    *  - **Do not open, configure or claim the interface first.** These are
@@ -151,6 +151,13 @@ export class RockUsb {
    *    time. rkdeveloptool touches none of that and works first try.
    *  - **Nothing here is RC4'd.** rkdeveloptool's GetEntryData is a plain
    *    memcpy; the header flag it reads is "RC4 *disable*". Entries go verbatim.
+   *  - **The device DOES re-enumerate once the loader is running**, so the
+   *    caller must find it again before the next command. Measured: a write
+   *    issued immediately after a successful push failed with "did not find any
+   *    rockusb device", and the same command three seconds later worked. It is
+   *    invisible inside rkdeveloptool because one process does the whole
+   *    sequence — it only bites tools that invoke steps separately, like this
+   *    one. waitForMode() after downloadBoot() is what covers it here.
    *
    * And the failure mode worth knowing: once a 471 has been followed by a
    * failed 472, the maskrom refuses a fresh 471 too, and only a power cycle
