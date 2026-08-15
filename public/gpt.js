@@ -119,3 +119,56 @@ export function buildGpt(partitions, diskSectors, uuids = new Map()) {
 
   return { master, backup, backupSector: diskSectors - 33 };
 }
+
+/**
+ * Read a GPT back out of the first 34 sectors of a device.
+ *
+ * This exists so a partition write can be aimed using the table the DEVICE
+ * actually has, rather than offsets copied from a parameter file into a script.
+ * The two agree on a factory unit — but a unit that has been flashed with
+ * something else, or is not a PLAY at all, is exactly the case where writing to
+ * a hardcoded sector does real damage. Read, match by name, then write.
+ *
+ * @param {Uint8Array} lba0to33  the first 34 sectors, as read from the device
+ * @returns {{name:string,firstLba:number,lastLba:number,sectors:number}[]}
+ */
+export function parseGpt(lba0to33) {
+  if (lba0to33.length < 34 * SECTOR_SIZE) {
+    throw new Error('need the first 34 sectors to read a GPT');
+  }
+  const h = SECTOR_SIZE;
+  const dv = new DataView(lba0to33.buffer, lba0to33.byteOffset, lba0to33.byteLength);
+  const magic = new TextDecoder('latin1').decode(lba0to33.subarray(h, h + 8));
+  if (magic !== 'EFI PART') throw new Error('no GPT on this device (no EFI PART magic)');
+
+  // Verify the header checksum before believing any offset in it. A garbled
+  // read here would otherwise become a write to an arbitrary sector.
+  const headerSize = dv.getUint32(h + 12, true);
+  if (headerSize < 92 || headerSize > SECTOR_SIZE) throw new Error('implausible GPT header size');
+  const stored = dv.getUint32(h + 16, true);
+  const copy = lba0to33.slice(h, h + headerSize);
+  new DataView(copy.buffer).setUint32(16, 0, true);
+  if (crc32(copy) !== stored) throw new Error('GPT header checksum does not match');
+
+  const entryLba = Number(dv.getBigUint64(h + 72, true));
+  const count = dv.getUint32(h + 80, true);
+  const size = dv.getUint32(h + 84, true);
+  if (size < 128 || count > 512) throw new Error('implausible GPT entry table');
+
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const o = entryLba * SECTOR_SIZE + i * size;
+    if (o + size > lba0to33.length) break;
+    const firstLba = Number(dv.getBigUint64(o + 32, true));
+    const lastLba = Number(dv.getBigUint64(o + 40, true));
+    if (!firstLba && !lastLba) continue;          // unused entry
+    let name = '';
+    for (let j = 0; j < 36; j++) {
+      const c = dv.getUint16(o + 56 + j * 2, true);
+      if (!c) break;
+      name += String.fromCharCode(c);
+    }
+    out.push({ name, firstLba, lastLba, sectors: lastLba - firstLba + 1 });
+  }
+  return out;
+}

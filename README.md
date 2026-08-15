@@ -25,7 +25,35 @@ disk in slices and never held in memory, so choosing one costs nothing.
 |---|---|
 | **Flash a factory `.img`** | Whole device: bootloader, u-boot, trust, kernel, DTB, rootfs, partition table. This is the brick-recovery path. |
 | **Inject a `.fw`** | Parks the package in the unused tail of the rootfs partition and adds a one-shot service that installs it on first boot via the device's own updater. |
+| **Write individual partitions** | The opposite job: put a *replacement* OS on a unit, writing only the partitions you name and leaving the rest — including the vendor's recovery partition — untouched. |
 | **Verify** | Optional read-back and compare of everything written. |
+
+## Writing individual partitions
+
+Restoring a factory image and installing a replacement OS are different
+operations, and this does the second one. Give it one file per partition — a
+`boot` image and a `rootfs` filesystem, say — and it writes those and nothing
+else.
+
+Two things make it safer than the `dd`-at-an-offset it replaces:
+
+- **It aims using the partition table read off the device**, not a sector copied
+  out of a parameter file. A number in a script is right until it meets a unit
+  that has already been reflashed, or is not a PLAY at all — which is precisely
+  the case where a 3.5 GiB write at a plausible offset does real damage. The
+  table is read, the header checksum is verified, partitions are matched by
+  name, and a file too large for its target is refused rather than truncated.
+- **`uboot`, `trust` and `recovery` are refused by default.** They are what
+  loader mode and the vendor's restore depend on. Writing them is possible, but
+  it takes a deliberate tick of an override, because getting them wrong is the
+  difference between "flash it again" and "this unit is gone".
+
+It needs the device in **loader mode**: a maskrom device cannot serve the LBA
+reads used to fetch the partition table until a loader has been pushed into it,
+and the loader comes out of a factory image.
+
+Everything not listed is left exactly as it was, which is the whole point — it
+is what keeps the factory recovery path available after you have replaced the OS.
 
 ## Why injection works
 

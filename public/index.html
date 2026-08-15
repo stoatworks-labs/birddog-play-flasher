@@ -87,6 +87,14 @@
   .note { color: var(--dim); font-size: .85rem; }
   footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line);
            color: var(--dim); font-size: .82rem; }
+
+  /* partition-write mode: a sub-panel inside Files, and its file->target table */
+  details.sub { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: .75rem;
+                color: inherit; margin-bottom: 0; }
+  details.sub > summary { cursor: pointer; }
+  table.partmap td { padding: .3rem .5rem .3rem 0; vertical-align: middle; }
+  table.partmap td:first-child { width: 45%; }
+  table.partmap select { width: 100%; padding: .25rem; }
 </style>
 </head>
 <body>
@@ -127,6 +135,20 @@
        a one-shot service installs it on first boot through the device's own updater. Leave empty
        to flash the image unchanged.</p>
     <div id="imgInfo"></div>
+
+    <details class="sub">
+      <summary><strong>…or write individual partitions</strong> (advanced)</summary>
+      <p class="hint">For putting a <em>replacement</em> OS on a unit rather than restoring it.
+         Pick one file per partition — e.g. a <code>boot</code> image and a <code>rootfs</code>
+         filesystem. Everything not listed is left exactly as it is, which is what keeps the
+         vendor's recovery path working afterwards.</p>
+      <label class="field" for="parts">Partition images</label>
+      <input type="file" id="parts" accept=".img,.ext2,.ext3,.ext4,.bin,application/octet-stream" multiple>
+      <p class="hint">Each file is aimed using the partition table read <strong>off the device</strong>,
+         never a fixed offset — so the wrong device fails harmlessly instead of taking a write at a
+         plausible-looking sector. Connect the device to choose targets.</p>
+      <div id="partMap"></div>
+    </details>
   </div>
 
   <div class="panel">
