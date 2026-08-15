@@ -150,10 +150,56 @@ export class RockUsb {
       if (!entry.data.length) continue;
       onProgress(`loader: ${entry.name} (${entry.data.length} bytes)`);
       await this.vendorRequest(entry.type === ENTRY471 ? 0x0471 : 0x0472, entry.data);
-      if (entry.delayMs) await sleep(entry.delayMs);
+      await sleep(Math.max(entry.delayMs || 0, 200));
+
+      // MEASURED ON HARDWARE, 2026-08-15: the maskrom restarts its USB stack
+      // once DDR is initialised, so the handle that carried ENTRY471 is dead
+      // before ENTRY472 is due. Pushing 472 through it times out, and the whole
+      // loader download then fails in a way that reads as a protocol error
+      // rather than as the device having simply gone away and come back.
+      //
+      // Worse, it leaves the maskrom in a state where it will not accept a
+      // fresh ENTRY471 either — so the retry also fails, and only a power cycle
+      // clears it. That is what made this look like an unrecoverable device
+      // rather than a missing re-open.
+      if (entry.type === ENTRY471) {
+        onProgress('  DDR initialised — waiting for the device to re-enumerate');
+        if (!(await this.reacquire())) {
+          throw new Error(
+            'the device did not come back after DDR init. Power-cycle it, hold the '
+            + 'reset button while reconnecting, and try again — nothing has been '
+            + 'written to flash.',
+          );
+        }
+        onProgress(`  back as a ${this.mode} device`);
+      }
     }
     await sleep(1000);
     return boot;
+  }
+
+  /**
+   * Re-open this device after it re-enumerates, keeping the same RockUsb.
+   * Returns false if it never comes back.
+   */
+  async reacquire(timeoutMs = 15000) {
+    try { await this.device.close(); } catch { /* it has already gone */ }
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const devices = await navigator.usb.getDevices();
+      const match = devices.find((d) => d.vendorId === RK_VENDOR_ID);
+      if (match) {
+        // `mode` is a getter over this.device, so swapping the device is the
+        // whole update — assigning to this.mode would throw (getter, no setter).
+        this.device = match;
+        try {
+          await this.open();
+          return true;
+        } catch { /* enumerated but not ready yet */ }
+      }
+      await sleep(300);
+    }
+    return false;
   }
 
   // ---- loader (CBW/CSW) ---------------------------------------------------
