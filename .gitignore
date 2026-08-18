@@ -10,3 +10,6 @@ node_modules/
 
 # Claude Code local dev config — absolute paths, machine-specific.
 .claude/
+
+# Run logs
+log/
