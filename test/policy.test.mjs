@@ -37,13 +37,22 @@ test('nothing large is committed', () => {
   // A loader blob is ~190 KB and a rootfs is gigabytes. No code or doc this repo
   // needs comes close, so a big file is a mistake worth catching early.
   //
-  // README screenshots are the one legitimate exception, and they get their own
-  // ceiling rather than a free pass — the point of the rule is that nothing
-  // firmware-shaped slips in wearing a different extension.
-  const SHOTS = /^docs\/screenshots\/[^/]+\.png$/;
+  // Two things are legitimately larger, and each gets its own named ceiling
+  // rather than a free pass — the point of the rule is that nothing
+  // firmware-shaped slips in wearing a different extension, so an exception
+  // that is not bounded is not an exception, it is a hole.
+  //
+  // The user guide is a PDF the website's build_guides.py renders from
+  // docs/USER-GUIDE.md and copies back here; it is pictures of the UI, so it
+  // grows with the screenshots and 663 KB today is not the ceiling.
+  const ALLOWANCES = [
+    [/^docs\/screenshots\/[^/]+\.png$/, 1024 * 1024],
+    [/^docs\/USER-GUIDE\.pdf$/, 4 * 1024 * 1024],
+  ];
+  const ceiling = (p) => ALLOWANCES.find(([re]) => re.test(p))?.[1] ?? 256 * 1024;
   const big = walk(ROOT)
     .map((p) => [p.slice(ROOT.length), statSync(p).size])
-    .filter(([p, size]) => size > (SHOTS.test(p) ? 1024 * 1024 : 256 * 1024));
+    .filter(([p, size]) => size > ceiling(p));
   assert.deepEqual(big, [], `unexpectedly large files: ${big.map(([p, s]) => `${p} (${s})`).join(', ')}`);
 });
 
