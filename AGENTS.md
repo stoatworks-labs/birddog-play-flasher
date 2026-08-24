@@ -91,3 +91,10 @@ Proven offline, against genuine vendor files:
 **Not proven:** anything involving an actual PLAY. No device has been flashed. The USB transport,
 the loader handoff, the re-enumeration wait and the first-boot injection are all untested against
 hardware. Keep the warning on the page honest until that changes.
+
+## Notes
+
+`docs/NOTES.md` carries this repo's working notes — current status, decisions
+already made, and the traps that have actually bitten. Read it before changing
+anything non-obvious. Cross-cutting fleet knowledge lives in
+[fleet-notes](https://github.com/stoatworks-labs/fleet-notes).
