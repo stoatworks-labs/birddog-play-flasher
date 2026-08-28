@@ -1,3 +1,10 @@
+> **AI-assisted project.** This codebase was created with [Claude Code](https://claude.com/claude-code).
+> The USB half has met a real BirdDog PLAY: the loader push, the re-enumeration wait after it and
+> the read-back verification were each corrected against what the device actually did, and the
+> image parsing, the filesystem injection and the partition table are covered by tests against
+> genuine vendor files. **No injected `.fw` has ever been seen to install on first boot** —
+> nothing has yet been watched to boot and apply one.
+
 # BirdDog PLAY recovery flasher
 
 A static web page that flashes a BirdDog PLAY in Rockchip recovery mode over USB, straight from
@@ -131,4 +138,4 @@ connected to Workers Builds, so pushing a branch cannot publish to production.
 
 ## Licence
 
-MIT. Built with AI assistance. Not affiliated with, endorsed by, or supported by BirdDog.
+MIT. Not affiliated with, endorsed by, or supported by BirdDog.
