@@ -88,9 +88,17 @@ Proven offline, against genuine vendor files:
 - the write plan: no two writes overlap, everything fits the device, the package lands past the
   filesystem and clear of `userdata`.
 
-**Not proven:** anything involving an actual PLAY. No device has been flashed. The USB transport,
-the loader handoff, the re-enumeration wait and the first-boot injection are all untested against
-hardware. Keep the warning on the page honest until that changes.
+**Proven on a real PLAY (2026-08-15, commits 1733be7 and 21e7e23):** the loader push, once
+the bug was found — claiming the interface before the vendor control transfers is what broke
+ENTRY472, and rkdeveloptool succeeded on the same unit and cable while we failed. The
+re-enumeration after the loader push, measured: a write issued immediately after a successful
+`db` could not find a rockusb device, and the identical command three seconds later worked.
+Read-back verification, corrected: this device returns 0xCC fill rather than data at and above
+sector 0x10000 — proven with factory partitions this tool has never written — so verification
+now probes for that ceiling and reports regions above it as NOT VERIFIED instead of corrupt.
+
+**Not proven:** the first-boot install of an injected package. No device has been seen to boot
+and apply one. Keep the warning on the page honest until that changes.
 
 ## Notes
 

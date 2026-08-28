@@ -8,9 +8,12 @@ No upload, no server, no vendor key. You supply your own factory `.img`; the loa
 pushed over USB is extracted from that file in the browser at run time. That is the only reason
 this repo can be public — see [AGENTS.md](AGENTS.md) §5.
 
-> **Nothing here has been run against a PLAY yet.** The image parsing, the filesystem injection
-> and the partition table are covered by tests against genuine vendor files. The USB half is
-> written from rkdeveloptool's protocol, not from observation.
+> **Partly proven on a real PLAY (2026-08-15).** The image parsing, the filesystem injection
+> and the partition table are covered by tests against genuine vendor files. The USB half was
+> written from rkdeveloptool's protocol and has since been corrected against a device: the
+> loader push, the re-enumeration wait after it, and read-back verification all changed because
+> of what the hardware did. **The first-boot install of an injected package has never been
+> observed** — nothing has yet been seen to boot and apply one.
 
 ![The page with a genuine PLAY_1.0.30.img chosen, showing the parsed partition table](docs/screenshots/flasher.png)
 

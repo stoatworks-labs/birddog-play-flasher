@@ -46,8 +46,14 @@ fine hosted. User chose hosted-static-USB-only over a local CLI.
 **Verified offline against real vendor files** (`~/Downloads/PLAY_1.0.30.img` + the 1.0.34 `.fw`):
 parsers, GPT (independent Python parser checks both CRCs), no-overlap write plan, and **e2fsck
 accepts the patched 2.4 GB rootfs** with debugfs reading the files back at 0755 root-owned.
-**NOTHING has touched a PLAY.** USB transport, loader handoff, re-enumeration and first-boot
-injection are all unproven — the page says so and AGENTS.md §6 lists it.
+**Proven against a real PLAY on 2026-08-15** (1733be7, 21e7e23): the loader push — ENTRY472
+was timing out because we claimed the interface before sending vendor control transfers, which
+rkdeveloptool never does; the re-enumeration after that push, measured (a write immediately
+after a successful `db` found no rockusb device, the same command three seconds later
+succeeded); and read-back verification, which was calling good writes corrupt because this
+device returns 0xCC fill at and above sector 0x10000 — shown with factory partitions this tool
+has never written. **The first-boot install of an injected package is still unproven** — no
+device has been seen to boot and apply one. The page says so and AGENTS.md §6 lists it.
 
 **Protocol traps (all from rkdeveloptool source, not observation):**
 - maskrom vendor request: `bmRequestType 0x40, bRequest 0x0C`, **wValue 0 and 0x0471/0x0472 in
