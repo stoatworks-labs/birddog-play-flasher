@@ -10,4 +10,8 @@ node_modules
 
 # Build output. Regenerated inside the image; copying a host build in would
 # make the image depend on whatever was last built on someone's laptop.
+
+# The desktop tray app (gen-launcher.mjs). Its Rust target dir alone would
+# be gigabytes, and none of it is served.
+/launcher
 # (none — the served directory is committed and must reach the build context)
