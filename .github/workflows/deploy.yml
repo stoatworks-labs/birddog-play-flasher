@@ -42,7 +42,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
 
       # Fail in a second rather than after a build. A deploy that cannot
       # authenticate is the whole point of this job failing to happen.
@@ -62,8 +61,6 @@ jobs:
             exit 1
           fi
           echo "token present - ok"
-
-      - run: npm ci
 
       - run: npm test
 
