@@ -108,12 +108,13 @@
     <p><strong>This rewrites the whole device.</strong> Bootloader, kernel, rootfs and partition
        table. It restores <em>factory</em> state, not this unit's own — its serial, hostname and
        everything under <code>/userdata</code> are gone. Dump a unit you care about first.</p>
-    <p class="note"><strong>Why beta:</strong> no PLAY has been flashed with this yet. The image
-       parsing, the filesystem injection and the partition table are covered by tests against
-       real vendor files — e2fsck accepts the patched rootfs, and the partition table is checked
-       by an independent parser. The USB half is written from Rockchip's protocol rather than
-       from observation, so the loader handoff and the first-boot install are the parts still
-       taking your unit's word for it.</p>
+    <p class="note"><strong>Why beta:</strong> the USB half has been run against real units — the
+       loader push, the re-enumeration wait after it and the read-back verification were each
+       corrected by what the hardware did — and the image parsing, the filesystem injection and
+       the partition table are covered by tests against real vendor files: e2fsck accepts the
+       patched rootfs, and the partition table is checked by an independent parser. What no unit
+       has yet been seen to do is boot and apply an injected package, so the first-boot install
+       is the part still taking your unit's word for it.</p>
   </div>
 
   <div id="unsupported" class="banner err" hidden>
