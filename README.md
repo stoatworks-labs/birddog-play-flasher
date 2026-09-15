@@ -22,7 +22,7 @@ this repo can be public — see [AGENTS.md](AGENTS.md) §5.
 > of what the hardware did. **The first-boot install of an injected package has never been
 > observed** — nothing has yet been seen to boot and apply one.
 
-![The page with a genuine PLAY_1.0.30.img chosen, showing the parsed partition table](docs/screenshots/flasher.png)
+![The page with a genuine PLAY_1.0.30.img and a .fw package chosen, showing the parsed nine-entry partition table](docs/screenshots/flasher.png)
 
 Both files above are real: a 2.3 GB factory `.img` and a 35 MB `.fw`. The image is read off
 disk in slices and never held in memory, so choosing one costs nothing.
