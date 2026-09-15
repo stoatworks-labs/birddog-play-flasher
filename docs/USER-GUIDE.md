@@ -4,8 +4,10 @@ A static web page that **flashes a BirdDog PLAY in Rockchip recovery mode over U
 the browser** — and, optionally, **injects a `.fw` update package into the image** so the device
 installs it on first boot.
 
-No upload, no server, no vendor key. **You supply your own factory `.img`**; the loader that gets
-pushed over USB is extracted from that file in the browser at run time.
+No upload, no server, no vendor key. **You supply your own factory `.img`** (BirdDog host them in
+their [PLAY Reimage Process](https://birddogaus-my.sharepoint.com/personal/jessicaf_birddog_tv/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fjessicaf%5Fbirddog%5Ftv%2FDocuments%2FRecovery%20Tools%2FPLAY%20%26%20PLAY%20Pro%2FPLAY%20Reimage%20Process&ga=1)
+folder on OneDrive, behind a Microsoft sign-in); the loader that gets pushed over USB is
+extracted from that file in the browser at run time.
 
 ![The page with a genuine factory image chosen, showing the parsed partition table](screenshots/flasher.png)
 

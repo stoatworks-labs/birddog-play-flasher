@@ -11,9 +11,11 @@ A static web page that flashes a BirdDog PLAY in Rockchip recovery mode over USB
 the browser — and, optionally, **injects a `.fw` update package into the image** so the device
 installs it on first boot.
 
-No upload, no server, no vendor key. You supply your own factory `.img`; the loader that gets
-pushed over USB is extracted from that file in the browser at run time. That is the only reason
-this repo can be public — see [AGENTS.md](AGENTS.md) §5.
+No upload, no server, no vendor key. You supply your own factory `.img` (BirdDog host them in
+their [PLAY Reimage Process](https://birddogaus-my.sharepoint.com/personal/jessicaf_birddog_tv/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fjessicaf%5Fbirddog%5Ftv%2FDocuments%2FRecovery%20Tools%2FPLAY%20%26%20PLAY%20Pro%2FPLAY%20Reimage%20Process&ga=1)
+folder on OneDrive, behind a Microsoft sign-in); the loader that gets pushed over USB is
+extracted from that file in the browser at run time. That is the only reason this repo can be
+public — see [AGENTS.md](AGENTS.md) §5.
 
 > **Partly proven on a real PLAY (2026-08-15).** The image parsing, the filesystem injection
 > and the partition table are covered by tests against genuine vendor files. The USB half was
