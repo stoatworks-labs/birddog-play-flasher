@@ -11,10 +11,15 @@ extracted from that file in the browser at run time.
 
 ![The page with a genuine factory image chosen, showing the parsed partition table](screenshots/flasher.png)
 
-> **Before you use this on a unit you care about: nothing here has been run against a PLAY yet.**
-> The image parsing, the filesystem injection and the partition table are covered by tests against
-> genuine vendor files. **The USB half is written from the protocol documentation, not from
-> observation.**
+> **Before you use this on a unit you care about: this is partly proven on a real PLAY, not
+> fully.** The image parsing, the filesystem injection and the partition table are covered by tests
+> against genuine vendor files. The USB half was written from rkdeveloptool's protocol and has since
+> been corrected against a real unit (2026-08-15): the loader push, the re-enumeration wait after
+> it, and read-back verification all changed because of what the hardware did — that device reads
+> back a fill pattern rather than data above a certain sector, so verification now reports anything
+> past that ceiling as *not verified* instead of calling it corrupt. **What no unit has yet been seen
+> to do is boot and apply an injected `.fw`** — the first-boot install is the one part still
+> unproven.
 >
 > This codebase was created with AI assistance, directed and reviewed by a human author.
 
