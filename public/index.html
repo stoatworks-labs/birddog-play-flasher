@@ -96,6 +96,11 @@
   table.partmap td:first-child { width: 45%; }
   table.partmap select { width: 100%; padding: .25rem; }
 </style>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- iOS ignores the manifest's icons entirely and wants a PNG of its own. -->
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <!-- Tints the status bar and the title bar once installed. -->
+  <meta name="theme-color" content="#fbfaf8" />
 </head>
 <body>
 <main>
@@ -221,5 +226,6 @@
   </footer>
 </main>
 <script type="module" src="app.js"></script>
+<script src="/register-sw.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="BirdDog PLAY recovery flasher">
+  <rect width="32" height="32" rx="6" fill="#1c1b1a"/>
+  <g id="mark">
+    <!-- A chip taking a flash: recovery over USB, straight onto the silicon. -->
+    <rect x="7.5" y="7.5" width="17" height="17" rx="2.4" fill="none" stroke="#e08a55" stroke-width="1.8"/>
+    <g stroke="#e08a55" stroke-width="1.5" stroke-linecap="round" opacity=".65">
+      <path d="M12 4.6v2.9M16 4.6v2.9M20 4.6v2.9M12 24.5v2.9M16 24.5v2.9M20 24.5v2.9"/>
+    </g>
+    <path d="M17.9 10.8 12.6 17.4h3.2l-1.7 4.4 5.4-6.9h-3.4z" fill="#e08a55"/>
+  </g>
+</svg>
