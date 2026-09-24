@@ -168,6 +168,10 @@ generated from `fleet.json` in stoatworks-unraid. Change them there and
 regenerate rather than editing them here.
 <!-- selfhost:end -->
 
+<!-- attributions:start -->
+This project is built on other people's work — see [ATTRIBUTIONS.md](ATTRIBUTIONS.md).
+<!-- attributions:end -->
+
 ## Licence
 
 MIT. Not affiliated with, endorsed by, or supported by BirdDog.
