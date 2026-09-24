@@ -1,7 +1,8 @@
 # Attributions
 
-This tool ships no third-party code and no vendor firmware. It does, however, implement a
-protocol and two container formats that were documented by other people's work.
+This tool ships no vendor firmware, and no third-party code beyond the desktop launcher's
+(below). It does, however, implement a protocol and two container formats that were
+documented by other people's work.
 
 ## rkdeveloptool — Rockchip
 
@@ -27,6 +28,12 @@ a private research repo.
 e2fsprogs. The test suite uses `mke2fs`, `e2fsck` and `debugfs` from
 [e2fsprogs](https://e2fsprogs.sourceforge.net/) as independent judges of what it writes;
 e2fsprogs is not bundled or redistributed here.
+
+## Tauri
+
+The desktop builds ship the launcher in `launcher/`, built on
+[Tauri](https://tauri.app) (MIT or Apache-2.0). Its Rust crates are pinned in
+`launcher/src-tauri/Cargo.lock`.
 
 ## BirdDog
 
