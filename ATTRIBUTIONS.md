@@ -1,49 +1,35 @@
 # Attributions
 
-birddog-play-flasher is built on other people's work. This file lists what that work is, who did
-it, and what it is doing here.
+This tool ships no third-party code and no vendor firmware. It does, however, implement a
+protocol and two container formats that were documented by other people's work.
 
-It is generated — the master lists live in the `stoatworks-backend` repo and are
-pushed out by `scripts/sync-attributions.py`. Edit it there, not here.
+## rkdeveloptool — Rockchip
 
-## Third-party code this project uses
+<https://github.com/rockchip-linux/rkdeveloptool>
 
-Libraries, SDKs and frameworks the project is built on or bundles.
+The USB protocol in `public/rockusb.js` and the partition table in `public/gpt.js` are
+implemented from rkdeveloptool's source (`RKComm.h`, `RKComm.cpp`, `RKDevice.cpp`, `RKScan.cpp`,
+`main.cpp`, `crc.cpp`). No code is copied; the constants, the CBW/CSW layout, the maskrom vendor
+request and the GPT construction all follow it deliberately, because matching the vendor tool's
+behaviour is the point.
 
-### Tauri
+rkdeveloptool is distributed under the GNU General Public License v2.
 
-<https://tauri.app>  
-Licence: MIT or Apache-2.0  
-Copyright: The Tauri Programme within The Commons Conservancy
+## Rockchip container formats
 
-A Cargo and npm dependency — of the app itself under src-tauri/, or of the desktop launcher under launcher/src-tauri/.
+`RKFW`, `RKAF`, `RKBOOT` and the `RSCE` resource format are Rockchip's. The parsers here were
+derived by inspection of a factory image, and the Python original they are ported from lives in
+a private research repo.
 
-Wraps a web front end in a native desktop app using the platform's own webview rather than a bundled browser, so the binary stays small.
+## ext2
 
-### The Rust crate ecosystem
+`public/ext2.js` implements the on-disk format described in the ext2 documentation and in
+e2fsprogs. The test suite uses `mke2fs`, `e2fsck` and `debugfs` from
+[e2fsprogs](https://e2fsprogs.sourceforge.net/) as independent judges of what it writes;
+e2fsprogs is not bundled or redistributed here.
 
-<https://crates.io>  
-Licence: predominantly MIT or Apache-2.0  
-Copyright: the individual crate authors
+## BirdDog
 
-Cargo dependencies, resolved and pinned in Cargo.lock.
-
-Async runtimes, protocol codecs, serialisation and GUI toolkits. The exact set and versions for any build are in that repo's Cargo.lock, which is the authoritative list.
-
-### The npm ecosystem
-
-<https://www.npmjs.com>  
-Licence: predominantly MIT  
-Copyright: the individual package authors
-
-npm dependencies, resolved and pinned in the lockfile.
-
-Build tooling, test runners and the libraries the front ends are assembled from. The exact set and versions for any build are in that repo's lockfile, which is the authoritative list.
-
-The full transitive dependency set for any build is pinned in this repo's lockfile,
-which is the authoritative list. What is named above is the layers a reader would
-want to know about, not every package that has ever been resolved.
-
-## Getting this wrong
-
-If your work is here and the description is inaccurate, the licence is wrong, or you would rather not be listed — open an issue and it will be fixed.
+BirdDog is a trademark of its owner. This project is not affiliated with, endorsed by, or
+supported by BirdDog, and redistributes none of their software. The firmware images this tool
+operates on are supplied by the user.
