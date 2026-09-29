@@ -1,4 +1,5 @@
-> **AI-assisted project.** This codebase was created with [Claude Code](https://claude.com/claude-code).
+> **AI-assisted project.** This codebase was created with [Claude](https://claude.com/claude-code)
+> (Anthropic), directed and reviewed by a human author.
 > The USB half has met a real BirdDog PLAY: the loader push, the re-enumeration wait after it and
 > the read-back verification were each corrected against what the device actually did, and the
 > image parsing, the filesystem injection and the partition table are covered by tests against
