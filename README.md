@@ -1,29 +1,27 @@
 > **AI-assisted project.** This codebase was created with [Claude](https://claude.com/claude-code)
 > (Anthropic), directed and reviewed by a human author.
-> The USB half has met a real BirdDog PLAY: the loader push, the re-enumeration wait after it and
-> the read-back verification were each corrected against what the device actually did, and the
-> image parsing, the filesystem injection and the partition table are covered by tests against
-> genuine vendor files. **No injected `.fw` has ever been seen to install on first boot** —
-> nothing has yet been watched to boot and apply one.
+> The USB half has met a real BirdDog PLAY and been corrected against it, and the image handling
+> is tested against genuine vendor files. **No injected `.fw` has ever been seen to install on
+> first boot.** The status note below has the details.
 
 # BirdDog PLAY recovery flasher
 
 A static web page that flashes a BirdDog PLAY in Rockchip recovery mode over USB, straight from
-the browser — and, optionally, **injects a `.fw` update package into the image** so the device
+the browser, and can also **inject a `.fw` update package into the image** so the device
 installs it on first boot.
 
-No upload, no server, no vendor key. You supply your own factory `.img` (BirdDog host them in
-their [PLAY Reimage Process](https://birddogaus-my.sharepoint.com/personal/jessicaf_birddog_tv/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fjessicaf%5Fbirddog%5Ftv%2FDocuments%2FRecovery%20Tools%2FPLAY%20%26%20PLAY%20Pro%2FPLAY%20Reimage%20Process&ga=1)
-folder on OneDrive, behind a Microsoft sign-in); the loader that gets pushed over USB is
-extracted from that file in the browser at run time. That is the only reason this repo can be
-public — see [AGENTS.md](AGENTS.md) §5.
+There's no upload, no server and no vendor key. You supply your own factory `.img` (BirdDog host
+them in their [PLAY Reimage Process](https://birddogaus-my.sharepoint.com/personal/jessicaf_birddog_tv/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fjessicaf%5Fbirddog%5Ftv%2FDocuments%2FRecovery%20Tools%2FPLAY%20%26%20PLAY%20Pro%2FPLAY%20Reimage%20Process&ga=1)
+folder on OneDrive, behind a Microsoft sign-in), and the loader that gets pushed over USB is
+extracted from that file in the browser at run time. That's the only reason this repo can be
+public. See [AGENTS.md](AGENTS.md) §5.
 
 > **Partly proven on a real PLAY (2026-08-15).** The image parsing, the filesystem injection
 > and the partition table are covered by tests against genuine vendor files. The USB half was
-> written from rkdeveloptool's protocol and has since been corrected against a device: the
-> loader push, the re-enumeration wait after it, and read-back verification all changed because
-> of what the hardware did. **The first-boot install of an injected package has never been
-> observed** — nothing has yet been seen to boot and apply one.
+> written from rkdeveloptool's protocol and I've since corrected it against a device: the loader push,
+> the re-enumeration wait after it, and read-back verification all changed because of what the
+> hardware did. **The first-boot install of an injected package has never been observed.**
+> Nothing has been seen to boot and apply one yet.
 
 ![The page with a genuine PLAY_1.0.30.img and a .fw package chosen, showing the parsed nine-entry partition table](docs/screenshots/flasher.png)
 
@@ -44,77 +42,77 @@ disk in slices and never held in memory, so choosing one costs nothing.
 ## Writing individual partitions
 
 Restoring a factory image and installing a replacement OS are different
-operations, and this does the second one. Give it one file per partition — a
-`boot` image and a `rootfs` filesystem, say — and it writes those and nothing
+jobs, and this does the second one. Give it one file per partition (a
+`boot` image and a `rootfs` filesystem, say) and it writes those and nothing
 else.
 
 Two things make it safer than the `dd`-at-an-offset it replaces:
 
 - **It aims using the partition table read off the device**, not a sector copied
   out of a parameter file. A number in a script is right until it meets a unit
-  that has already been reflashed, or is not a PLAY at all — which is precisely
-  the case where a 3.5 GiB write at a plausible offset does real damage. The
+  that's already been reflashed, or isn't a PLAY at all, and that's the very
+  case where a 3.5 GiB write at a plausible offset does real damage. The
   table is read, the header checksum is verified, partitions are matched by
   name, and a file too large for its target is refused rather than truncated.
-- **`uboot`, `trust` and `recovery` are refused by default.** They are what
-  loader mode and the vendor's restore depend on. Writing them is possible, but
-  it takes a deliberate tick of an override, because getting them wrong is the
+- **`uboot`, `trust` and `recovery` are refused by default.** They're what
+  loader mode and the vendor's restore depend on. You can write them, but
+  only by ticking an override on purpose, because getting them wrong is the
   difference between "flash it again" and "this unit is gone".
 
-It needs the device in **loader mode**: a maskrom device cannot serve the LBA
+It needs the device in **loader mode**: a maskrom device can't serve the LBA
 reads used to fetch the partition table until a loader has been pushed into it,
 and the loader comes out of a factory image.
 
-Everything not listed is left exactly as it was, which is the whole point — it
-is what keeps the factory recovery path available after you have replaced the OS.
+Everything not listed is left just as it was. That's what keeps the factory
+recovery path there for you after you've replaced the OS.
 
 ## Why injection works
 
-A `.fw` is not a partition image — it is a gzip'd tar whose `./update` runs as root **on a booted
-device**. In maskrom mode there is no OS to run it, so it cannot simply be flashed. Two facts
+A `.fw` isn't a partition image. It's a gzip'd tar whose `./update` runs as root **on a booted
+device**, and in maskrom mode there's no OS to run it, so it can't just be flashed. Two facts
 from the factory image make the injection clean:
 
 - **The rootfs partition has a 1.26 GiB hole.** `parameter.txt` gives rootfs 7,340,032 sectors
-  (3.5 GiB) while `rootfs.img` is 2,399,595,520 bytes (2.235 GiB). Nothing ever grows into it —
-  only `userdata:grow` grows, and that is a different partition. The package lives there as raw
+  (3.5 GiB) while `rootfs.img` is 2,399,595,520 bytes (2.235 GiB). Nothing ever grows into it:
+  only `userdata:grow` grows, and that's a different partition. The package lives there as raw
   bytes, costing no filesystem space.
-- **The rootfs is plain ext2** — `dir_index filetype` and nothing else. No journal, no extents,
-  no metadata checksums. So three small files can be added to it correctly from JavaScript, and
-  e2fsck agrees.
+- **The rootfs is plain ext2**, with `dir_index filetype` and nothing else. No journal, no
+  extents, no metadata checksums. So three small files can be added to it correctly from
+  JavaScript, and e2fsck agrees.
 
 On first boot the injected service `dd`s the package back off the partition, hands it to
-`BirdDogUpdateRunner` exactly as the vendor's own network path does, waits for the updater to
+`BirdDogUpdateRunner` the same way the vendor's own network path does, waits for the updater to
 finish, and reboots. It marks itself done **before** installing, so a package that kills the box
-cannot reinstall itself on every boot.
+can't reinstall itself on every boot.
 
 ## Getting a PLAY into recovery mode
 
-The recovery button is not on the outside of the case — it sits **inside the 3.5 mm headphone
-socket**. Straighten a paperclip or use a SIM-eject tool, push it gently all the way in, and you
-will feel the button click.
+The recovery button isn't on the outside of the case. It sits **inside the 3.5 mm headphone
+socket**, which is a choice somebody made on purpose. Straighten a paperclip or use a SIM-eject
+tool, push it gently all the way in, and you'll feel the button click.
 
 1. Power the unit off.
 2. Push the pin into the headphone socket and hold the button down.
 3. Still holding it, apply power, and keep holding for a few seconds after.
 4. Connect USB, then release. The unit enumerates as vendor `2207`, in either *maskrom* or
-   *loader* mode — the page reports which and handles both.
+   *loader* mode, and the page reports which and handles both.
 
-If it boots normally instead, the button was not held down far enough or long enough; the socket
+If it boots normally instead, the button wasn't held down far enough or long enough. The socket
 is deep and the button is right at the bottom.
 
 **Windows** needs [Zadig](https://zadig.akeo.ie/) to rebind the device to WinUSB, because
-Rockchip's own driver claims it and WebUSB cannot then reach it. macOS needs nothing. Linux
+Rockchip's own driver claims it and WebUSB can't reach it after that. macOS needs nothing. Linux
 needs a udev rule for `2207:*`.
 
 ## Installing a `.fw` on a unit that still boots
 
-You do not need any of this to update a working PLAY — the device's own web interface does it.
-Browse to the unit's IP address, log in, go to the **System** tab, and upload the `.fw` there.
+You don't need any of this to update a working PLAY, because the device's own web interface does
+it. Browse to the unit's IP address, log in, go to the **System** tab, and upload the `.fw` there.
 The device installs it and reboots.
 
-This tool is for the case where that is not an option: a unit that will not boot, will not take
-a web-UI update, or needs the whole device put back to a known state. Injecting the `.fw` here
-just saves a second trip once it is back up.
+This tool is for when that isn't an option: a unit that won't boot, won't take a web-UI update,
+or needs the whole device put back to a known state. Injecting the `.fw` here just saves you a
+second trip once it's back up.
 
 ## Tests
 
@@ -122,9 +120,9 @@ just saves a second trip once it is back up.
 npm test
 ```
 
-CI-safe tests build their own ext2 filesystem with `mke2fs` and check the result with `e2fsck`,
-`debugfs` and an independent Python GPT parser — no vendor files involved. The end-to-end tests
-need real firmware and are skipped unless you point them at your own copies:
+The CI-safe tests build their own ext2 filesystem with `mke2fs` and check the result with `e2fsck`,
+`debugfs` and an independent Python GPT parser, with no vendor files involved. The end-to-end
+tests need real firmware and are skipped unless you point them at your own copies:
 
 ```bash
 PLAY_IMG=~/Downloads/PLAY_1.0.30.img PLAY_FW=~/fw/BirdDog_PLAY-1.0.34.fw npm test
@@ -136,8 +134,8 @@ PLAY_IMG=~/Downloads/PLAY_1.0.30.img PLAY_FW=~/fw/BirdDog_PLAY-1.0.34.fw npm tes
 cf-run npx wrangler deploy
 ```
 
-Assets only — there is no Worker, because there is nothing for a server to do. Deliberately not
-connected to Workers Builds, so pushing a branch cannot publish to production.
+It's assets only. There's no Worker, because there's nothing for a server to do. I've kept it
+off Workers Builds on purpose, so pushing a branch can't publish to production.
 
 <!-- selfhost:start -->
 ## Run your own copy

@@ -1,25 +1,25 @@
 # BirdDog PLAY recovery flasher user guide
 
-A static web page that **flashes a BirdDog PLAY in Rockchip recovery mode over USB, straight from
-the browser** — and, optionally, **injects a `.fw` update package into the image** so the device
-installs it on first boot.
+A static web page that flashes a BirdDog PLAY in Rockchip recovery mode over USB, straight from
+the browser, and can also inject a `.fw` update package into the image so the device installs
+it on first boot.
 
-No upload, no server, no vendor key. **You supply your own factory `.img`** (BirdDog host them in
-their [PLAY Reimage Process](https://birddogaus-my.sharepoint.com/personal/jessicaf_birddog_tv/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fjessicaf%5Fbirddog%5Ftv%2FDocuments%2FRecovery%20Tools%2FPLAY%20%26%20PLAY%20Pro%2FPLAY%20Reimage%20Process&ga=1)
-folder on OneDrive, behind a Microsoft sign-in); the loader that gets pushed over USB is
+There's no upload, no server and no vendor key. **You supply your own factory `.img`** (BirdDog
+host them in their [PLAY Reimage Process](https://birddogaus-my.sharepoint.com/personal/jessicaf_birddog_tv/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fjessicaf%5Fbirddog%5Ftv%2FDocuments%2FRecovery%20Tools%2FPLAY%20%26%20PLAY%20Pro%2FPLAY%20Reimage%20Process&ga=1)
+folder on OneDrive, behind a Microsoft sign-in), and the loader that gets pushed over USB is
 extracted from that file in the browser at run time.
 
 ![The page with a genuine factory image chosen, showing the parsed partition table](screenshots/flasher.png)
 
-> **Before you use this on a unit you care about: this is partly proven on a real PLAY, not
-> fully.** The image parsing, the filesystem injection and the partition table are covered by tests
-> against genuine vendor files. The USB half was written from rkdeveloptool's protocol and has since
-> been corrected against a real unit (2026-08-15): the loader push, the re-enumeration wait after
-> it, and read-back verification all changed because of what the hardware did — that device reads
-> back a fill pattern rather than data above a certain sector, so verification now reports anything
-> past that ceiling as *not verified* instead of calling it corrupt. **What no unit has yet been seen
-> to do is boot and apply an injected `.fw`** — the first-boot install is the one part still
-> unproven.
+> **Before you use this on a unit you care about: it's partly proven on a real PLAY, not
+> fully.** The image parsing, the filesystem injection and the partition table are covered by
+> tests against genuine vendor files. The USB half was written from rkdeveloptool's protocol and
+> has since been corrected against a real unit (2026-08-15): the loader push, the
+> re-enumeration wait after it, and read-back verification all changed because of what the
+> hardware did. That device reads back a fill pattern rather than data above a certain sector,
+> so verification now reports anything past that ceiling as *not verified* instead of calling it
+> corrupt. **What no unit has been seen to do yet is boot and apply an injected `.fw`.** The
+> first-boot install is the one part still unproven.
 >
 > This codebase was created with AI assistance, directed and reviewed by a human author.
 
@@ -30,31 +30,31 @@ extracted from that file in the browser at run time.
 **To update a working PLAY, use the device's own web interface.** Browse to the unit's IP address,
 log in, go to the **System** tab, and upload the `.fw` there. The device installs it and reboots.
 
-This tool is for the case where that is not an option: **a unit that will not boot**, or one you
-are deliberately putting a different OS on.
+This tool is for when that isn't an option: **a unit that won't boot**, or one you've
+decided to put a different OS on.
 
 ---
 
 ## Getting a PLAY into recovery mode
 
-**The recovery button is not on the outside of the case — it sits inside the 3.5 mm headphone
-socket.** Straighten a paperclip or use a SIM-eject tool, push it gently all the way in, and you
-will feel the button click.
+**The recovery button isn't on the outside of the case. It sits inside the 3.5 mm headphone
+socket.** Straighten a paperclip or use a SIM-eject tool, push it gently all the way in, and
+you'll feel the button click.
 
 1. Power the unit off.
 2. Push the pin into the headphone socket and **hold the button down**.
 3. Still holding it, apply power, and **keep holding for a few seconds after**.
 4. Connect USB, then release.
 
-The unit enumerates in either **maskrom** or **loader** mode — the page reports which and handles
-both.
+The unit enumerates in either **maskrom** or **loader** mode, and the page reports which and
+handles both.
 
-**If it boots normally instead, the button was not held down far enough or long enough.** The
+**If it boots normally instead, the button wasn't held down far enough or long enough.** The
 socket is deep and the button is right at the bottom.
 
 **Windows** needs [Zadig](https://zadig.akeo.ie/) to rebind the device to WinUSB, because
-Rockchip's own driver claims it and the browser cannot then reach it. **macOS needs nothing.**
-Linux needs a udev rule.
+Rockchip's own driver claims it and the browser can't reach it after that. **macOS needs
+nothing.** Linux needs a udev rule.
 
 ---
 
@@ -74,47 +74,47 @@ nothing.
 
 ## Writing individual partitions
 
-Restoring a factory image and installing a replacement OS are different operations, and this does
+Restoring a factory image and installing a replacement OS are different jobs, and this does
 the second. Give it one file per partition and it writes those and nothing else.
 
 Two things make it safer than the `dd`-at-an-offset it replaces:
 
 - **It aims using the partition table read off the device**, not a sector number copied out of a
-  parameter file. A number in a script is right until it meets a unit that has already been
-  reflashed, or is not a PLAY at all — **which is precisely the case where a 3.5 GiB write at a
+  parameter file. A number in a script is right until it meets a unit that's already been
+  reflashed, or isn't a PLAY at all, **and that's the very case where a 3.5 GiB write at a
   plausible offset does real damage.** The table is read, the header checksum verified, partitions
   matched by name, and **a file too large for its target is refused rather than truncated.**
-- **`uboot`, `trust` and `recovery` are refused by default.** They are what loader mode and the
-  vendor's restore depend on. Writing them is possible, but **it takes a deliberate tick of an
-  override**, because getting them wrong is the difference between "flash it again" and "this unit
-  is gone".
+- **`uboot`, `trust` and `recovery` are refused by default.** They're what loader mode and the
+  vendor's restore depend on. You can write them, but **only by ticking an override on
+  purpose**, because getting them wrong is the difference between "flash it again" and "this
+  unit is gone".
 
-It needs the device in **loader mode**: a maskrom device cannot serve the reads used to fetch the
+It needs the device in **loader mode**: a maskrom device can't serve the reads used to fetch the
 partition table until a loader has been pushed into it, and **the loader comes out of a factory
 image.**
 
-Everything not listed is left exactly as it was — which is what keeps the factory recovery path
-available after you have replaced the OS.
+Everything not listed is left just as it was, and that's what keeps the factory recovery path
+there for you after you've replaced the OS.
 
 ---
 
 ## Why injection works
 
-A `.fw` is not a partition image — it is an archive whose installer script **runs as root on a
-booted device.** In maskrom mode there is no OS to run it, so it cannot simply be flashed.
+A `.fw` isn't a partition image. It's an archive whose installer script **runs as root on a
+booted device**, and in maskrom mode there's no OS to run it, so it can't just be flashed.
 
 Two facts from the factory image make the injection clean:
 
 - **The rootfs partition has a 1.26 GiB hole.** The partition is 3.5 GiB and the filesystem image
-  is 2.235 GiB, and **nothing ever grows into it** — only the userdata partition grows. The package
+  is 2.235 GiB, and **nothing ever grows into it**: only the userdata partition grows. The package
   lives there as raw bytes, costing no filesystem space.
-- **The rootfs is plain ext2** — no journal, no extents, no metadata checksums. So three small
-  files can be added to it correctly from JavaScript, and `e2fsck` agrees.
+- **The rootfs is plain ext2**, with no journal, no extents and no metadata checksums. So three
+  small files can be added to it correctly from JavaScript, and `e2fsck` agrees.
 
 On first boot the injected service reads the package back off the partition, hands it to the
-device's own updater exactly as the vendor's network path does, waits, and reboots.
+device's own updater the same way the vendor's network path does, waits, and reboots.
 
-**It marks itself done *before* installing**, so a package that kills the box cannot reinstall
+**It marks itself done *before* installing**, so a package that kills the box can't reinstall
 itself on every boot.
 
 ---
