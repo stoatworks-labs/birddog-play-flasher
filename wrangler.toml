@@ -4,8 +4,9 @@
 # The image is read off the user's disk, parsed in the browser and pushed
 # straight to USB; nothing is uploaded and there is no secret to bind.
 #
-# Deliberately NOT connected to Workers Builds. Deploys are local
-# (`cf-run npx wrangler deploy`), so pushing a branch cannot publish to
+# Deliberately NOT connected to Workers Builds. Deploys run from
+# .github/workflows/deploy.yml on a push to main (or by hand with
+# `cf-run npx wrangler deploy`), so pushing any other branch cannot publish to
 # production — a trap that has bitten other repos in this fleet.
 
 name = "birddog-play-flasher"

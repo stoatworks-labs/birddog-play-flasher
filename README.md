@@ -130,12 +130,15 @@ PLAY_IMG=~/Downloads/PLAY_1.0.30.img PLAY_FW=~/fw/BirdDog_PLAY-1.0.34.fw npm tes
 
 ## Deploying
 
+Pushing to `main` deploys: `.github/workflows/deploy.yml` runs the tests, uploads `public/` with
+wrangler and checks the live page is serving the new build. A push that only touches docs doesn't. By hand:
+
 ```bash
 cf-run npx wrangler deploy
 ```
 
 It's assets only. There's no Worker, because there's nothing for a server to do. I've kept it
-off Workers Builds on purpose, so pushing a branch can't publish to production.
+off Workers Builds on purpose, so pushing any other branch can't publish to production.
 
 <!-- selfhost:start -->
 ## Run your own copy
