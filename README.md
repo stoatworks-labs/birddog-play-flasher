@@ -16,6 +16,11 @@ folder on OneDrive, behind a Microsoft sign-in), and the loader that gets pushed
 extracted from that file in the browser at run time. That's the only reason this repo can be
 public. See [AGENTS.md](AGENTS.md) §5.
 
+It's hosted at [birddog-play-flasher.stoatworks-labs.com](https://birddog-play-flasher.stoatworks-labs.com).
+Its [page on Stoatworks Labs](https://stoatworks-labs.com/web-tools/birddog-play-flasher/) covers running
+it on your own server, and the [project page](https://stoatworks-labs.com/software/birddog-play-flasher/)
+has the user guide.
+
 > **Partly proven on a real PLAY (2026-08-15).** The image parsing, the filesystem injection
 > and the partition table are covered by tests against genuine vendor files. The USB half was
 > written from rkdeveloptool's protocol and I've since corrected it against a device: the loader push,
