@@ -33,6 +33,7 @@ const SHELL = [
   '/',
   '/manifest.webmanifest',
   '/icon.svg',
+  '/stoatworks-theme.css',
   '/app.js',
   '/crc.js',
   '/ext2.js',
