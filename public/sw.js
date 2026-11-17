@@ -44,6 +44,8 @@ const SHELL = [
   '/rkboot.js',
   '/rkfw.js',
   '/rockusb.js',
+  '/about.js',
+  '/about-data.js',
 ];
 
 self.addEventListener('install', (event) => {
